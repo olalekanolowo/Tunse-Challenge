@@ -63,6 +63,8 @@ class AuthController extends Controller
 
         $this->activityLogger->record('student.registered', $user, ['challenge_id' => $profile->challenge_id], $user);
 
+        $user->sendEmailVerificationNotification();
+
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([

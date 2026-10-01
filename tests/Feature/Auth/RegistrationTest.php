@@ -2,7 +2,9 @@
 
 use App\Models\Institution;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 function validRegistrationPayload(Institution $institution, array $overrides = []): array
@@ -24,6 +26,7 @@ function validRegistrationPayload(Institution $institution, array $overrides = [
 
 it('registers a student with a generated challenge id and returns a token', function () {
     Storage::fake('local');
+    Notification::fake();
     $institution = Institution::factory()->create(['short_code' => 'UNILAG']);
 
     $response = $this->postJson('/api/auth/register', validRegistrationPayload($institution));
@@ -35,6 +38,9 @@ it('registers a student with a generated challenge id and returns a token', func
         ->assertJsonStructure(['token']);
 
     $this->assertDatabaseHas('users', ['email' => 'jane@example.com', 'role' => 'student']);
+
+    $user = User::where('email', 'jane@example.com')->firstOrFail();
+    Notification::assertSentTo($user, VerifyEmail::class);
 });
 
 it('rejects registration with a duplicate email', function () {

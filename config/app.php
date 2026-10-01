@@ -56,6 +56,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | The canonical origin of the separate frontend SPA that consumes this
+    | API. Used to build outward-facing links (e.g. email verification)
+    | that should land on the frontend rather than this backend. May be a
+    | comma-separated list (see config/cors.php) — the first entry is
+    | treated as the primary/production origin for link-building purposes.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -29,12 +29,14 @@ class E2eSeeder extends Seeder
             'name' => 'E2E Admin',
             'password' => Hash::make('password'),
             'role' => UserRole::Admin,
+            'email_verified_at' => now(),
         ]);
 
         User::updateOrCreate(['email' => 'e2e-auditor@tunse.test'], [
             'name' => 'E2E Auditor',
             'password' => Hash::make('password'),
             'role' => UserRole::Auditor,
+            'email_verified_at' => now(),
         ]);
 
         $institution = Institution::where('short_code', 'UNILAG')->firstOrFail();
@@ -43,6 +45,7 @@ class E2eSeeder extends Seeder
             'name' => 'E2E Student',
             'password' => Hash::make('password'),
             'role' => UserRole::Student,
+            'email_verified_at' => now(),
         ]);
 
         StudentProfile::updateOrCreate(['user_id' => $student->id], [
