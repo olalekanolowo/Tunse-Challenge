@@ -43,6 +43,19 @@ it('registers a student with a generated challenge id and returns a token', func
     Notification::assertSentTo($user, VerifyEmail::class);
 });
 
+it('still registers the student when the verification email cannot be sent', function () {
+    Storage::fake('local');
+    useFailingMailer();
+    $institution = Institution::factory()->create();
+
+    $this->postJson('/api/auth/register', validRegistrationPayload($institution))
+        ->assertCreated()
+        ->assertJsonPath('user.email_verified', false)
+        ->assertJsonStructure(['token']);
+
+    $this->assertDatabaseHas('users', ['email' => 'jane@example.com']);
+});
+
 it('rejects registration with a duplicate email', function () {
     Storage::fake('local');
     $institution = Institution::factory()->create();

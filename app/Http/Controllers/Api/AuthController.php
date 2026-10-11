@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AuthController extends Controller
 {
@@ -63,7 +64,11 @@ class AuthController extends Controller
 
         $this->activityLogger->record('student.registered', $user, ['challenge_id' => $profile->challenge_id], $user);
 
-        $user->sendEmailVerificationNotification();
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (TransportExceptionInterface $e) {
+            report($e);
+        }
 
         $token = $user->createToken('auth')->plainTextToken;
 

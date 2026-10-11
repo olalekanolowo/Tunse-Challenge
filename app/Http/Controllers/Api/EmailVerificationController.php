@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class EmailVerificationController extends Controller
 {
@@ -34,7 +35,13 @@ class EmailVerificationController extends Controller
             return response()->json(['message' => 'Email already verified.']);
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        try {
+            $request->user()->sendEmailVerificationNotification();
+        } catch (TransportExceptionInterface $e) {
+            report($e);
+
+            return response()->json(['message' => 'Could not send the verification email. Please try again later.'], 503);
+        }
 
         return response()->json(['message' => 'Verification link sent.']);
     }
