@@ -73,6 +73,15 @@ it('sends a new verification email on resend for an unverified user', function (
     Notification::assertSentTo($user, VerifyEmail::class);
 });
 
+it('returns 503 when the verification email cannot be resent', function () {
+    useFailingMailer();
+    $user = User::factory()->unverified()->create();
+
+    $this->withHeaders(apiAuthHeader($user))
+        ->postJson('/api/auth/email/resend')
+        ->assertServiceUnavailable();
+});
+
 it('does not send another email when resend is called for an already verified user', function () {
     Notification::fake();
     $user = User::factory()->create();
