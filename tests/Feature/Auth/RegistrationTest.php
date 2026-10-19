@@ -88,6 +88,60 @@ it('rejects registration when a required field is missing', function () {
     $response->assertUnprocessable()->assertJsonValidationErrors('phone');
 });
 
+it('rejects a phone number that is not a Nigerian mobile number', function (string $phone) {
+    Storage::fake('local');
+    $institution = Institution::factory()->create();
+
+    $this->postJson('/api/auth/register', validRegistrationPayload($institution, ['phone' => $phone]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('phone');
+})->with([
+    'an email address' => ['jane@example.com'],
+    'too short' => ['0801234567'],
+    'a landline' => ['012345678'],
+    'letters mixed in' => ['0801234567a'],
+]);
+
+it('accepts a phone number typed with spaces and dashes', function () {
+    Storage::fake('local');
+    $institution = Institution::factory()->create();
+
+    $this->postJson('/api/auth/register', validRegistrationPayload($institution, ['phone' => '0801 234-5678']))
+        ->assertCreated()
+        ->assertJsonPath('user.student_profile.phone', '+2348012345678');
+});
+
+it('rejects a full name that is not a name', function () {
+    Storage::fake('local');
+    $institution = Institution::factory()->create();
+
+    $this->postJson('/api/auth/register', validRegistrationPayload($institution, ['full_name' => 'jane@example.com']))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('full_name');
+});
+
+it('accepts graduation years from 2015 and rejects earlier ones', function () {
+    Storage::fake('local');
+    $institution = Institution::factory()->create();
+
+    $this->postJson('/api/auth/register', validRegistrationPayload($institution, ['graduation_year' => 2015]))
+        ->assertCreated();
+
+    $this->postJson('/api/auth/register', validRegistrationPayload($institution, [
+        'email' => 'older@example.com',
+        'graduation_year' => 2014,
+    ]))->assertUnprocessable()->assertJsonValidationErrors('graduation_year');
+});
+
+it('rejects registration under an inactive institution', function () {
+    Storage::fake('local');
+    $institution = Institution::factory()->create(['active' => false]);
+
+    $this->postJson('/api/auth/register', validRegistrationPayload($institution))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('institution_id');
+});
+
 it('normalizes phone numbers to the canonical +234 format regardless of input format', function (string $input, string $expected) {
     Storage::fake('local');
     $institution = Institution::factory()->create();

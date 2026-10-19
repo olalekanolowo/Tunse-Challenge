@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             StatesLgaSeeder::class,
             CategorySeeder::class,
             ChallengeDemoSeeder::class,
+            NigerianUniversitiesSeeder::class,
         ]);
 
         User::factory()->admin()->create([
