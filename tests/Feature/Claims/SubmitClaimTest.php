@@ -80,7 +80,7 @@ it('rejects an exact duplicate claim submission by the same student', function (
     expect(Claim::count())->toBe(1);
 });
 
-it('allows different students to claim the same recruit phone but flags it', function () {
+it('rejects a recruit phone another student already claimed in the same phase', function () {
     $phase = Phase::factory()->open()->create(['number' => 1]);
     $claimType = ClaimType::factory()->for($phase)->create(['code' => 'verified_tworker', 'base_points' => 10]);
     $studentA = studentWithProfile();
@@ -91,10 +91,41 @@ it('allows different students to claim the same recruit phone but flags it', fun
         ->assertCreated();
 
     $this->withHeaders(apiAuthHeader($studentB))
+        ->postJson('/api/claims', claimPayload($claimType, ['recruit_phone' => '+234 801 111 2222']))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('recruit_phone');
+
+    expect(Claim::where('recruit_phone', '+2348011112222')->count())->toBe(1);
+});
+
+it('lets another student claim a recruit phone once the earlier claim was rejected', function () {
+    $phase = Phase::factory()->open()->create(['number' => 1]);
+    $claimType = ClaimType::factory()->for($phase)->create(['code' => 'verified_tworker', 'base_points' => 10]);
+    $studentA = studentWithProfile();
+    $studentB = studentWithProfile();
+
+    Claim::factory()->for($studentA)->for($phase)->for($claimType, 'claimType')->for($studentA->studentProfile->institution)
+        ->create(['recruit_phone' => '+2348011112222', 'status' => 'rejected']);
+
+    $this->withHeaders(apiAuthHeader($studentB))
         ->postJson('/api/claims', claimPayload($claimType, ['recruit_phone' => '08011112222']))
         ->assertCreated();
+});
 
-    expect(Claim::where('recruit_phone', '+2348011112222')->count())->toBe(2);
+it('lets another student claim a recruit phone used in a different phase', function () {
+    $closedPhase = Phase::factory()->closed()->create(['number' => 1]);
+    $openPhase = Phase::factory()->open()->create(['number' => 2]);
+    $oldClaimType = ClaimType::factory()->for($closedPhase)->create(['base_points' => 10]);
+    $claimType = ClaimType::factory()->for($openPhase)->create(['base_points' => 10]);
+    $studentA = studentWithProfile();
+    $studentB = studentWithProfile();
+
+    Claim::factory()->for($studentA)->for($closedPhase)->for($oldClaimType, 'claimType')->for($studentA->studentProfile->institution)
+        ->create(['recruit_phone' => '+2348011112222']);
+
+    $this->withHeaders(apiAuthHeader($studentB))
+        ->postJson('/api/claims', claimPayload($claimType, ['recruit_phone' => '08011112222']))
+        ->assertCreated();
 });
 
 it('submits a phase 2 qualified vendor claim with null base points as zero provisional points', function () {

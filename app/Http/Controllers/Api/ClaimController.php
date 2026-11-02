@@ -86,6 +86,7 @@ class ClaimController extends Controller
         $institutionId = $user->studentProfile->institution_id;
 
         $this->claimUpgradeService->assertNoRoleConflict($user->id, $phase->id, $recruitPhone, $claimType);
+        $this->duplicateDetectionService->assertPhoneNotClaimedByAnotherStudent($user->id, $phase->id, $recruitPhone);
 
         if (Claim::where('user_id', $user->id)
             ->where('claim_type_id', $claimType->id)
@@ -171,6 +172,10 @@ class ClaimController extends Controller
                     'recruit_phone' => ['You already have another claim for this recruit and claim type.'],
                 ]);
             }
+        }
+
+        if ($recruitPhone !== $claim->recruit_phone) {
+            $this->duplicateDetectionService->assertPhoneNotClaimedByAnotherStudent($claim->user_id, $claim->phase_id, $recruitPhone);
         }
 
         $photoPath = $claim->photo_path;

@@ -122,3 +122,21 @@ it('rejects moving a claim to a claim type in a different phase', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors('claim_type_id');
 });
+
+it('rejects changing the recruit phone to one another student already claimed', function () {
+    $phase = Phase::factory()->open()->create(['number' => 1]);
+    $claimType = ClaimType::factory()->for($phase)->create(['code' => 'verified_tworker', 'base_points' => 10]);
+    $studentA = studentWithProfile();
+    $studentB = studentWithProfile();
+    Claim::factory()->for($studentA)->for($phase)->for($claimType, 'claimType')->for($studentA->studentProfile->institution)
+        ->create(['recruit_phone' => '+2348011112222', 'status' => 'submitted']);
+    $claim = Claim::factory()->for($studentB)->for($phase)->for($claimType, 'claimType')->for($studentB->studentProfile->institution)
+        ->create(['recruit_phone' => '+2348011113333', 'status' => 'submitted']);
+
+    $this->withHeaders(apiAuthHeader($studentB))
+        ->patchJson("/api/claims/{$claim->id}", ['recruit_phone' => '08011112222'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('recruit_phone');
+
+    expect($claim->fresh()->recruit_phone)->toBe('+2348011113333');
+});
